@@ -114,6 +114,12 @@ export default function ProjectDetail() {
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 mb-2">{project.name}</h1>
+              <div className="mb-3">
+                <span className="text-sm text-gray-600 mr-2">Project Code:</span>
+                <span className="text-lg font-mono bg-blue-100 text-blue-800 px-3 py-1 rounded-lg font-bold">
+                  {project.projectCode}
+                </span>
+              </div>
               <p className="text-gray-600">Manage groups and controls for this project</p>
             </div>
             <Link

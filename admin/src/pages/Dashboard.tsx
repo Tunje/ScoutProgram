@@ -25,6 +25,13 @@ export default function Dashboard() {
     return () => unsubscribe();
   }, []);
 
+  const generateProjectCode = () => {
+    // Generate a readable project code from project name
+    const words = newProjectName.trim().toUpperCase().replace(/[^A-Z0-9\s]/g, '').split(/\s+/);
+    const code = words.slice(0, 2).join('') + Math.floor(Math.random() * 1000);
+    return code;
+  };
+
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProjectName.trim()) return;
@@ -32,6 +39,7 @@ export default function Dashboard() {
     try {
       await addDoc(collection(db, 'projects'), {
         name: newProjectName,
+        projectCode: generateProjectCode(),
         createdAt: Timestamp.now(),
         status: 'active'
       });
@@ -123,6 +131,9 @@ export default function Dashboard() {
                   <FolderOpen size={32} className="text-blue-600" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">{project.name}</h3>
+                <p className="text-sm font-mono bg-blue-50 text-blue-700 px-2 py-1 rounded inline-block mb-2">
+                  Code: {project.projectCode}
+                </p>
                 <p className="text-sm text-gray-500">
                   Created {project.createdAt.toDate().toLocaleDateString()}
                 </p>

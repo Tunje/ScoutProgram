@@ -3,6 +3,7 @@ import { Timestamp } from 'firebase/firestore';
 export interface Project {
   id: string;
   name: string;
+  projectCode: string;
   createdAt: Timestamp;
   status: 'active' | 'archived';
 }
