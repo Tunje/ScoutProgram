@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, updateDoc, doc, getDoc } from 'firebase/firestore';
+import * as SecureStore from 'expo-secure-store';
 import { db } from '../lib/firebase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
@@ -18,9 +19,9 @@ export default function GroupRegistrationScreen({ navigation, route }: Props) {
   const [verifiedGroup, setVerifiedGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(false);
 
+
   const handleVerifyCode = async () => {
     if (!registrationCode.trim()) {
-      Alert.alert('Error', 'Please enter a registration code');
       return;
     }
 
@@ -35,7 +36,6 @@ export default function GroupRegistrationScreen({ navigation, route }: Props) {
       const snapshot = await getDocs(q);
       
       if (snapshot.empty) {
-        Alert.alert('Invalid Code', 'No group found with this code');
         setLoading(false);
         return;
       }
@@ -43,17 +43,20 @@ export default function GroupRegistrationScreen({ navigation, route }: Props) {
       const groupDoc = snapshot.docs[0];
       const group = { id: groupDoc.id, ...groupDoc.data() } as Group;
       
+      // Pre-fill name if already claimed
+      if (group.isClaimed && group.name !== 'Unclaimed') {
+        setGroupName(group.name);
+      }
+      
       setVerifiedGroup(group);
       setLoading(false);
     } catch (error: any) {
-      Alert.alert('Error', 'Failed to verify code');
       setLoading(false);
     }
   };
 
   const handleRegisterGroup = async () => {
     if (!groupName.trim() || !verifiedGroup) {
-      Alert.alert('Error', 'Please enter a group name');
       return;
     }
 
@@ -64,14 +67,11 @@ export default function GroupRegistrationScreen({ navigation, route }: Props) {
         isClaimed: true
       });
 
-      Alert.alert('Success!', 'Group registered successfully', [
-        {
-          text: 'OK',
-          onPress: () => navigation.navigate('Scan', { projectId })
-        }
-      ]);
+      // Save group ID for next time
+      await SecureStore.setItemAsync('groupId', verifiedGroup.id);
+
+      navigation.navigate('Scan', { projectId });
     } catch (err) {
-      Alert.alert('Error', 'Failed to register group');
       setLoading(false);
     }
   };

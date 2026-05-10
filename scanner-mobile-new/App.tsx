@@ -5,6 +5,7 @@ import { RootStackParamList } from './src/types';
 import LoginScreen from './src/screens/LoginScreen';
 import GroupRegistrationScreen from './src/screens/GroupRegistrationScreen';
 import ScanScreen from './src/screens/ScanScreen';
+import ControlDetailScreen from './src/screens/ControlDetailScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -20,12 +21,17 @@ export default function App() {
         <Stack.Screen 
           name="GroupRegistration" 
           component={GroupRegistrationScreen}
-          options={{ headerShown: false }}
+          options={{ title: 'Register Group' }}
         />
         <Stack.Screen 
           name="Scan" 
           component={ScanScreen}
           options={{ title: 'Scan Controls' }}
+        />
+        <Stack.Screen 
+          name="ControlDetail" 
+          component={ControlDetailScreen}
+          options={{ title: 'Control Details' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

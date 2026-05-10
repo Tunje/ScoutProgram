@@ -5,11 +5,21 @@ import { db } from '@/lib/firebase';
 import { Project, Group, Scan } from '@/types';
 import { ArrowLeft, Trophy, Medal, Award } from 'lucide-react';
 
+interface ControlDetail {
+  controlId: string;
+  controlName: string;
+  points: number;
+  timerSeconds: number;
+  completedAt: string;
+  categoryPoints?: { [key: string]: string };
+}
+
 interface GroupScore {
   group: Group;
   totalPoints: number;
   scanCount: number;
   lastScanTime?: Date;
+  controls: ControlDetail[];
 }
 
 export default function Leaderboard() {
@@ -62,25 +72,61 @@ export default function Leaderboard() {
             
             let totalPoints = 0;
             let lastScanTime: Date | undefined;
+            const controlDetails: ControlDetail[] = [];
+
+            if (groupScans.length === 0) {
+              return {
+                group,
+                totalPoints: 0,
+                scanCount: 0,
+                lastScanTime: undefined,
+                controls: []
+              };
+            }
 
             for (const scan of groupScans) {
-              // Add points if available
-              if (scan.pointsAwarded) {
-                totalPoints += scan.pointsAwarded;
-              }
+              // Add points from controls object
+              if (scan.controls) {
+                for (const [controlId, controlData] of Object.entries(scan.controls)) {
+                  if (controlData.points) {
+                    totalPoints += controlData.points;
+                  }
 
-              // Track last scan time
-              const scanTime = scan.scannedAt.toDate();
-              if (!lastScanTime || scanTime > lastScanTime) {
-                lastScanTime = scanTime;
+                  // Fetch control name
+                  const controlDoc = await getDoc(doc(db, 'controls', controlId));
+                  const controlName = controlDoc.exists() ? controlDoc.data().name : 'Unknown';
+
+                  controlDetails.push({
+                    controlId,
+                    controlName,
+                    points: controlData.points,
+                    timerSeconds: controlData.timerSeconds,
+                    completedAt: controlData.completedAt,
+                    categoryPoints: controlData.categoryPoints
+                  });
+
+                  // Track last scan time
+                  if (controlData.completedAt) {
+                    const scanTime = new Date(controlData.completedAt);
+                    if (!lastScanTime || scanTime > lastScanTime) {
+                      lastScanTime = scanTime;
+                    }
+                  }
+                }
               }
             }
+
+            // Sort controls by completion time
+            controlDetails.sort((a, b) => 
+              new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+            );
 
             return {
               group,
               totalPoints,
-              scanCount: groupScans.length,
-              lastScanTime
+              scanCount: controlDetails.length,
+              lastScanTime,
+              controls: controlDetails
             };
           })
         );
@@ -206,10 +252,35 @@ export default function Leaderboard() {
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between text-sm text-gray-600">
-                  <span>{score.scanCount} scans</span>
-                  {score.lastScanTime && (
-                    <span>Last scan: {score.lastScanTime.toLocaleTimeString()}</span>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex justify-between text-sm text-gray-600 mb-3">
+                    <span>{score.scanCount} controls completed</span>
+                    {score.lastScanTime && (
+                      <span>Last: {score.lastScanTime.toLocaleTimeString()}</span>
+                    )}
+                  </div>
+
+                  {score.controls && score.controls.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-gray-700">Control Details:</h4>
+                      {score.controls.map((control, idx) => (
+                        <div key={idx} className="bg-gray-50 rounded p-3 text-sm">
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="font-medium text-gray-900">{control.controlName}</span>
+                            <span className="font-bold text-blue-600">{control.points} pts</span>
+                          </div>
+                          <div className="flex justify-between text-xs text-gray-600">
+                            <span>Timer: {Math.floor(control.timerSeconds / 60)}m {control.timerSeconds % 60}s</span>
+                            <span>{new Date(control.completedAt).toLocaleString()}</span>
+                          </div>
+                          {control.categoryPoints && Object.keys(control.categoryPoints).length > 0 && (
+                            <div className="mt-1 text-xs text-gray-600">
+                              Categories: {Object.entries(control.categoryPoints).map(([name, pts]) => `${name}: ${pts}`).join(', ')}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>

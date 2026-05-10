@@ -58,7 +58,7 @@ export default function ProjectDetail() {
     if (!newGroupKår.trim() || !projectId) return;
 
     try {
-      await addDoc(collection(db, 'groups'), {
+      const groupRef = await addDoc(collection(db, 'groups'), {
         projectId,
         name: 'Unclaimed',
         kår: newGroupKår,
@@ -67,6 +67,17 @@ export default function ProjectDetail() {
         color: `#${Math.floor(Math.random()*16777215).toString(16)}`,
         createdAt: Timestamp.now()
       });
+
+      // Create scan document for this group
+      await addDoc(collection(db, 'scans'), {
+        groupId: groupRef.id,
+        projectId,
+        kår: newGroupKår,
+        groupName: 'Unclaimed',
+        controls: {},
+        createdAt: Timestamp.now()
+      });
+
       setNewGroupKår('');
       setShowNewGroup(false);
     } catch (error) {

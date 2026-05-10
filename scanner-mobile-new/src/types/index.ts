@@ -18,6 +18,11 @@ export interface Group {
   createdAt: Timestamp;
 }
 
+export interface PointCategory {
+  name: string;
+  maxPoints: number;
+}
+
 export interface Control {
   id: string;
   projectId: string;
@@ -26,6 +31,7 @@ export interface Control {
   displayText: string;
   hasPoints: boolean;
   pointsValue?: number;
+  pointCategories?: PointCategory[];
   hasTimer: boolean;
   timerConfig?: {
     durationMinutes: number;
@@ -38,5 +44,6 @@ export type RootStackParamList = {
   GroupRegistration: { projectId: string };
   Scan: { projectId: string };
   ManualCodeEntry: { projectId: string; group: Group };
+  ControlDetail: { projectId: string; controlId: string; groupId: string };
   Timer: { control: Control; group: Group; projectId: string };
 };

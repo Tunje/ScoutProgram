@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { signInAnonymously } from 'firebase/auth';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import * as SecureStore from 'expo-secure-store';
 import { auth, db } from '../lib/firebase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
@@ -15,23 +16,36 @@ export default function LoginScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Auto-login anonymously on mount
-    const autoLogin = async () => {
+    // Auto-login anonymously and check for saved project
+    const init = async () => {
       try {
         if (!auth.currentUser) {
           await signInAnonymously(auth);
         }
+        
+        // Try to load saved project ID
+        const savedProjectId = await SecureStore.getItemAsync('projectId');
+        if (savedProjectId) {
+          // Check if project still exists
+          const projectDoc = await getDoc(doc(db, 'projects', savedProjectId));
+          if (projectDoc.exists()) {
+            // Auto-navigate to group registration
+            navigation.replace('GroupRegistration', { projectId: savedProjectId });
+          } else {
+            // Project deleted, clear saved ID
+            await SecureStore.deleteItemAsync('projectId');
+          }
+        }
       } catch (error: any) {
-        console.log('Auth error:', error);
+        console.log('Init error:', error);
       }
     };
     
-    autoLogin();
+    init();
   }, []);
 
   const handleSubmit = async () => {
     if (!projectCode.trim()) {
-      Alert.alert('Error', 'Please enter a project code');
       return;
     }
 
@@ -45,7 +59,6 @@ export default function LoginScreen({ navigation }: Props) {
       const snapshot = await getDocs(q);
       
       if (snapshot.empty) {
-        Alert.alert('Invalid Code', 'No project found with this code');
         setLoading(false);
         return;
       }
@@ -53,9 +66,11 @@ export default function LoginScreen({ navigation }: Props) {
       const projectDoc = snapshot.docs[0];
       const projectId = projectDoc.id;
       
+      // Save project ID for next time
+      await SecureStore.setItemAsync('projectId', projectId);
+      
       navigation.replace('GroupRegistration', { projectId });
     } catch (error: any) {
-      Alert.alert('Error', 'Failed to find project');
       setLoading(false);
     }
   };

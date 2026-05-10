@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, query, onSnapshot, addDoc, Timestamp, where } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, Timestamp, where, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Project } from '@/types';
-import { Plus, FolderOpen } from 'lucide-react';
+import { Plus, FolderOpen, Trash2 } from 'lucide-react';
 
 export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -47,6 +47,14 @@ export default function Dashboard() {
       setShowNewProject(false);
     } catch (error) {
       console.error('Error creating project:', error);
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      await deleteDoc(doc(db, 'projects', projectId));
+    } catch (error) {
+      console.error('Error deleting project:', error);
     }
   };
 
@@ -122,22 +130,33 @@ export default function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map((project) => (
-              <Link
+              <div
                 key={project.id}
-                to={`/project/${project.id}`}
-                className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow p-6 border-2 border-transparent hover:border-blue-500"
+                className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow p-6 border-2 border-transparent hover:border-blue-500 relative"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <FolderOpen size={32} className="text-blue-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{project.name}</h3>
-                <p className="text-sm font-mono bg-blue-50 text-blue-700 px-2 py-1 rounded inline-block mb-2">
-                  Code: {project.projectCode}
-                </p>
-                <p className="text-sm text-gray-500">
-                  Created {project.createdAt.toDate().toLocaleDateString()}
-                </p>
-              </Link>
+                <Link to={`/project/${project.id}`}>
+                  <div className="flex items-start justify-between mb-4">
+                    <FolderOpen size={32} className="text-blue-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{project.name}</h3>
+                  <p className="text-sm font-mono bg-blue-50 text-blue-700 px-2 py-1 rounded inline-block mb-2">
+                    Code: {project.projectCode}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Created {project.createdAt.toDate().toLocaleDateString()}
+                  </p>
+                </Link>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleDeleteProject(project.id);
+                  }}
+                  className="absolute top-4 right-4 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Delete project"
+                >
+                  <Trash2 size={20} />
+                </button>
+              </div>
             ))}
           </div>
         )}

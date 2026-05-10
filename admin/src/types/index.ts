@@ -42,18 +42,21 @@ export interface Control {
   createdAt: Timestamp;
 }
 
+export interface ControlScanData {
+  points: number;
+  categoryPoints?: { [key: string]: string };
+  timerSeconds: number;
+  completedAt: string;
+}
+
 export interface Scan {
   id: string;
   projectId: string;
   groupId: string;
-  controlId: string;
-  scannedBy: string;
-  scannedAt: Timestamp;
-  pointsAwarded?: number;
-  timerData?: {
-    action: 'start' | 'stop' | 'checkpoint';
-    timestamp: Timestamp;
-  };
+  kår: string;
+  groupName: string;
+  controls: { [controlId: string]: ControlScanData };
+  createdAt: Timestamp;
 }
 
 export interface TimerState {
